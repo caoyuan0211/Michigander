@@ -1,0 +1,3117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Michigander</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS VARIABLES & THEMING
+============================================================ */
+:root {
+  --accent: #2563EB;
+  --accent-light: #3B82F6;
+  --accent-subtle: rgba(37,99,235,0.12);
+  --accent-glow: rgba(37,99,235,0.25);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --sheet-border-radius: 28px;
+  --transition-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light theme */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #F5F4F0;
+    --bg-card: #FFFFFF;
+    --bg-input: #EEECEA;
+    --bg-elevated: #FFFFFF;
+    --text-primary: #1A1917;
+    --text-secondary: #6B6864;
+    --text-tertiary: #A09D9A;
+    --border: rgba(0,0,0,0.07);
+    --border-strong: rgba(0,0,0,0.12);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
+    --overlay: rgba(0,0,0,0.4);
+    --bubble-user: var(--accent);
+    --bubble-user-text: #FFFFFF;
+    --bubble-ai: #FFFFFF;
+    --bubble-ai-text: #1A1917;
+    --word-hover: rgba(37,99,235,0.08);
+    --sheet-bg: #FFFFFF;
+    --nav-bg: rgba(245,244,240,0.85);
+  }
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F0F0E;
+    --bg-card: #1C1C1A;
+    --bg-input: #252522;
+    --bg-elevated: #242422;
+    --text-primary: #F0EDE8;
+    --text-secondary: #8A8784;
+    --text-tertiary: #5A5855;
+    --border: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.10);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.6);
+    --overlay: rgba(0,0,0,0.7);
+    --bubble-user: var(--accent);
+    --bubble-user-text: #FFFFFF;
+    --bubble-ai: #1C1C1A;
+    --bubble-ai-text: #F0EDE8;
+    --word-hover: rgba(37,99,235,0.15);
+    --sheet-bg: #1C1C1A;
+    --nav-bg: rgba(15,15,14,0.85);
+  }
+}
+
+/* Custom theme overrides applied via JS */
+body.theme-custom {
+  /* --accent gets set via JS */
+}
+
+/* ============================================================
+   RESET & BASE
+============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ============================================================
+   APP SHELL
+============================================================ */
+#app {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================
+   PAGES (screens)
+============================================================ */
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--transition-smooth), transform 0.3s var(--transition-smooth);
+  transform: translateY(16px);
+  overflow: hidden;
+}
+
+.page.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   AUTH PAGE
+============================================================ */
+#page-auth {
+  background: var(--bg);
+  justify-content: center;
+  align-items: center;
+  padding: 32px 24px;
+  gap: 0;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.auth-logo-mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 8px 24px var(--accent-glow);
+}
+
+.auth-logo-mark svg { width: 36px; height: 36px; }
+
+.auth-logo h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.auth-logo p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+}
+
+.auth-tab.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.auth-input:focus { border-color: var(--accent); }
+.auth-input::placeholder { color: var(--text-tertiary); }
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 4px;
+  letter-spacing: 0.1px;
+}
+
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px var(--accent-glow); }
+.btn-primary:active { transform: translateY(0); }
+
+.auth-error {
+  font-size: 13px;
+  color: #EF4444;
+  text-align: center;
+  display: none;
+}
+
+/* ============================================================
+   TOP NAV
+============================================================ */
+.top-nav {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px 8px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.nav-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  position: relative;
+}
+
+.nav-btn:hover { background: var(--border); color: var(--text-primary); }
+.nav-btn:active { transform: scale(0.92); }
+
+.nav-btn svg { width: 20px; height: 20px; }
+
+/* ============================================================
+   BOTTOM TAB BAR
+============================================================ */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: color 0.2s;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-item.active { color: var(--accent); }
+
+.tab-item svg { width: 22px; height: 22px; }
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* ============================================================
+   CHAT PAGE
+============================================================ */
+#page-chat {
+  background: var(--bg);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-messages::-webkit-scrollbar { display: none; }
+
+/* Message bubbles */
+.msg {
+  display: flex;
+  gap: 10px;
+  max-width: 100%;
+  animation: msgIn 0.3s var(--transition-spring) both;
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.msg.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border: 1.5px solid var(--border);
+}
+
+.msg-avatar svg { width: 15px; height: 15px; color: var(--accent); }
+
+.msg.user .msg-avatar {
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.msg.user .msg-avatar svg { color: white; }
+
+.msg-body { max-width: calc(100% - 48px); }
+
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.msg.user .msg-bubble {
+  background: var(--bubble-user);
+  color: var(--bubble-user-text);
+  border-radius: 18px 18px 4px 18px;
+}
+
+.msg.ai .msg-bubble {
+  background: var(--bubble-ai);
+  color: var(--bubble-ai-text);
+  border-radius: 18px 18px 18px 4px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Clickable words */
+.word-token {
+  display: inline;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+  padding: 1px 0;
+  line-height: inherit;
+}
+
+.word-token:hover {
+  background: var(--word-hover);
+  color: var(--accent);
+}
+
+.word-token:active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--bubble-ai);
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 18px 4px;
+  width: fit-content;
+  box-shadow: var(--shadow-sm);
+}
+
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  animation: typingDot 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingDot {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Chat input area */
+.chat-input-area {
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.chat-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg-input);
+  border-radius: 22px;
+  padding: 2px 14px;
+  border: 1.5px solid transparent;
+  transition: border-color 0.2s;
+  min-height: 44px;
+}
+
+.chat-input-wrapper:focus-within { border-color: var(--accent); }
+
+#chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  resize: none;
+  max-height: 120px;
+  padding: 10px 0;
+  line-height: 1.4;
+  overflow-y: auto;
+}
+
+#chat-input::placeholder { color: var(--text-tertiary); }
+
+.send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.send-btn:hover { transform: scale(1.08); }
+.send-btn:active { transform: scale(0.95); }
+.send-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+.send-btn svg { width: 18px; height: 18px; color: white; }
+
+/* ============================================================
+   WORD TOOLTIP (small popup)
+============================================================ */
+#word-tooltip {
+  position: fixed;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  max-width: 220px;
+  pointer-events: all;
+  opacity: 0;
+  transform: translateY(4px) scale(0.96);
+  transition: all 0.18s var(--transition-spring);
+  font-size: 13px;
+}
+
+#word-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.tooltip-word {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.tooltip-pos {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+}
+
+.tooltip-def {
+  color: var(--text-secondary);
+  line-height: 1.4;
+  font-size: 13px;
+}
+
+.tooltip-more {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tooltip-more:hover { opacity: 0.8; }
+
+/* ============================================================
+   WORD DETAIL SHEET (full-screen bottom sheet)
+============================================================ */
+#sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--transition-smooth);
+}
+
+#sheet-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#word-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 94%;
+  background: var(--sheet-bg);
+  border-radius: var(--sheet-border-radius) var(--sheet-border-radius) 0 0;
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.45s var(--transition-spring);
+  overflow: hidden;
+  will-change: transform;
+}
+
+#word-sheet.open {
+  transform: translateY(0);
+}
+
+/* Sheet handle bar */
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+.sheet-header {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sheet-word-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.sheet-word-phonetic {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.sheet-word-pos {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+  letter-spacing: 0.3px;
+}
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sheet-body::-webkit-scrollbar { display: none; }
+
+.sheet-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.sheet-section-content {
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.65;
+}
+
+.sheet-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sheet-tag {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.sheet-tag:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sheet-register-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.sheet-register-badge.formal {
+  background: rgba(234, 179, 8, 0.12);
+  color: #CA8A04;
+}
+
+.sheet-register-badge.informal {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16A34A;
+}
+
+/* Sheet mini-chat */
+.sheet-chat-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.sheet-chat-divider::before,
+.sheet-chat-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.sheet-chat-area {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+}
+
+.sheet-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet-chat-messages::-webkit-scrollbar { display: none; }
+
+.sheet-msg {
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 14px;
+  max-width: 90%;
+  animation: msgIn 0.2s var(--transition-spring) both;
+}
+
+.sheet-msg.user {
+  background: var(--accent);
+  color: white;
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+}
+
+.sheet-msg.ai {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  align-self: flex-start;
+  border-radius: 14px 14px 14px 4px;
+}
+
+.sheet-chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 20px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--sheet-bg);
+  flex-shrink: 0;
+}
+
+#sheet-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1.5px solid transparent;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#sheet-input:focus { border-color: var(--accent); }
+#sheet-input::placeholder { color: var(--text-tertiary); }
+
+.sheet-send-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.sheet-send-btn:hover { transform: scale(1.08); }
+.sheet-send-btn:active { transform: scale(0.92); }
+.sheet-send-btn svg { width: 16px; height: 16px; color: white; }
+
+/* Loading shimmer */
+.shimmer {
+  background: linear-gradient(90deg, var(--border) 25%, var(--border-strong) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+  height: 16px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.shimmer-block { height: 16px; margin-bottom: 8px; border-radius: 6px; }
+
+/* ============================================================
+   VOCABULARY PAGE
+============================================================ */
+#page-vocab {
+  background: var(--bg);
+}
+
+.vocab-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+
+.vocab-content::-webkit-scrollbar { display: none; }
+
+.vocab-date-group {
+  margin-bottom: 24px;
+}
+
+.vocab-date-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.vocab-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.vocab-word-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.vocab-word-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.vocab-word-card:active { transform: scale(0.97); }
+
+.vocab-word-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vocab-word-card.reviewed::before { opacity: 1; }
+
+.vocab-card-word {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  letter-spacing: -0.2px;
+}
+
+.vocab-card-def {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vocab-card-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.vocab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.vocab-dot.due { background: var(--accent); }
+.vocab-dot.mastered { background: #22C55E; }
+
+.vocab-dot-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   REVIEW (flashcard) MODE
+============================================================ */
+#review-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.4s var(--transition-spring);
+}
+
+#review-overlay.open { transform: translateY(0); }
+
+.review-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  gap: 12px;
+}
+
+.review-close {
+  background: var(--bg-input);
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.review-close svg { width: 16px; height: 16px; }
+
+.review-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.review-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s var(--transition-smooth);
+}
+
+.review-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.review-card-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.flashcard {
+  width: 100%;
+  max-width: 360px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.6;
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--transition-smooth);
+}
+
+.flashcard.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flashcard-front {
+  background: var(--bg-card);
+  box-shadow: var(--shadow-md);
+}
+
+.flashcard-back {
+  background: var(--accent);
+  transform: rotateY(180deg);
+  border-color: transparent;
+}
+
+.flashcard-front-word {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.flashcard-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 10px;
+}
+
+.flashcard-back-def {
+  font-size: 17px;
+  color: white;
+  text-align: center;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.flashcard-back-example {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.review-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.review-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.review-btn.hard {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+}
+
+.review-btn.easy {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16A34A;
+}
+
+.review-btn:hover { transform: translateY(-2px); }
+.review-btn:active { transform: scale(0.97); }
+
+.review-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.review-complete-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.review-complete-icon svg { width: 36px; height: 36px; color: #16A34A; }
+
+/* ============================================================
+   SETTINGS PAGE
+============================================================ */
+#page-settings {
+  background: var(--bg);
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+
+.settings-content::-webkit-scrollbar { display: none; }
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 4px;
+  margin-bottom: 8px;
+}
+
+.settings-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-row:last-child { border-bottom: none; }
+.settings-row:hover { background: var(--bg-input); }
+.settings-row:active { background: var(--bg-input); }
+
+.settings-row-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-row-icon svg { width: 17px; height: 17px; color: var(--accent); }
+
+.settings-row-text { flex: 1; }
+
+.settings-row-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-row-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+/* Toggle switch */
+.toggle {
+  width: 50px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--border-strong);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  border: none;
+  outline: none;
+}
+
+.toggle.on { background: var(--accent); }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.25s var(--transition-spring);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle.on::after { transform: translateX(22px); }
+
+/* Color picker */
+.color-picker-row {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.color-swatch-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.color-swatch.selected::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
+}
+
+.color-swatch:hover { transform: scale(1.15); }
+
+/* Profile section */
+.profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: white;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.profile-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.profile-email {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   API KEY PROMPT
+============================================================ */
+#api-key-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+#api-key-modal.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.api-key-card {
+  width: 100%;
+  background: var(--sheet-bg);
+  border-radius: var(--sheet-border-radius) var(--sheet-border-radius) 0 0;
+  padding: 24px 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.4s var(--transition-spring);
+}
+
+#api-key-modal.visible .api-key-card {
+  transform: translateY(0);
+}
+
+.api-key-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.api-key-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.api-key-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ============================================================
+   EMPTY STATE
+============================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 32px;
+  text-align: center;
+  gap: 12px;
+  height: 100%;
+  pointer-events: none;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--accent-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.empty-icon svg { width: 32px; height: 32px; color: var(--accent); }
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 260px;
+}
+
+/* ============================================================
+   CHAT WELCOME PROMPTS
+============================================================ */
+.welcome-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.welcome-prompt-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-body);
+  line-height: 1.4;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.welcome-prompt-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.welcome-prompt-btn:active { transform: scale(0.98); }
+
+.prompt-emoji { font-size: 18px; flex-shrink: 0; }
+
+/* ============================================================
+   MISC UTILITIES
+============================================================ */
+.hidden { display: none !important; }
+
+.loading-dot {
+  display: inline-block;
+  animation: pulse 1.4s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Scroll lock */
+body.scroll-lock { overflow: hidden; }
+
+/* Snackbar */
+#snackbar {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text-primary);
+  color: var(--bg);
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 600;
+  opacity: 0;
+  transition: all 0.3s var(--transition-spring);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#snackbar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Stars background for empty state aesthetic */
+.stars-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  opacity: 0;
+  animation: starTwinkle var(--d, 3s) var(--delay, 0s) infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.4; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================================
+       AUTH PAGE
+  ============================================================ -->
+  <div id="page-auth" class="page active">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 28 L18 8 L28 28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11 22 L25 22" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="18" cy="8" r="2.5" fill="white"/>
+        </svg>
+      </div>
+      <h1>Michigander</h1>
+      <p>Learn English the Great Lakes way</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+      </div>
+
+      <div class="auth-form" id="auth-form">
+        <div class="auth-field" id="field-name" style="display:none">
+          <label>Name</label>
+          <input type="text" class="auth-input" id="input-name" placeholder="What should we call you?" autocomplete="name">
+        </div>
+        <div class="auth-field">
+          <label>Email</label>
+          <input type="email" class="auth-input" id="input-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label>Password</label>
+          <input type="password" class="auth-input" id="input-password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="auth-error" id="auth-error"></div>
+        <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth()">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CHAT PAGE
+  ============================================================ -->
+  <div id="page-chat" class="page">
+    <div class="top-nav">
+      <button class="nav-btn" onclick="showNewChatConfirm()" title="New chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+      <span class="nav-title">Michigander</span>
+      <button class="nav-btn" onclick="showWordOfDay()" title="Word of the day">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div id="chat-welcome" class="empty-state" style="height:auto; padding: 32px 20px 16px; pointer-events:all;">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="empty-title">Hey, let's talk!</div>
+        <div class="empty-desc">Chat in English on anything you like. Tap any word to look it up instantly.</div>
+        <div class="welcome-prompts" style="width:100%; pointer-events:all;">
+          <button class="welcome-prompt-btn" onclick="sendPrompt(this)">
+            <span class="prompt-emoji">🏒</span>Tell me something cool about Michigan sports
+          </button>
+          <button class="welcome-prompt-btn" onclick="sendPrompt(this)">
+            <span class="prompt-emoji">🗺️</span>Let's talk about travel and adventure
+          </button>
+          <button class="welcome-prompt-btn" onclick="sendPrompt(this)">
+            <span class="prompt-emoji">🎬</span>What movies have you seen lately?
+          </button>
+          <button class="welcome-prompt-btn" onclick="sendPrompt(this)">
+            <span class="prompt-emoji">🌊</span>Tell me about the Great Lakes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="chat-input-wrapper">
+        <textarea id="chat-input" rows="1" placeholder="Message in English…" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="send-btn" onclick="sendChat()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tab-bar" id="chat-tab-bar">
+      <button class="tab-item active" onclick="switchTab('chat')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <span class="tab-label">Chat</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('vocab')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+        <span class="tab-label">Words</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        <span class="tab-label">Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       VOCAB PAGE
+  ============================================================ -->
+  <div id="page-vocab" class="page">
+    <div class="top-nav">
+      <div style="width:36px"></div>
+      <span class="nav-title">My Words</span>
+      <button class="nav-btn" id="review-start-btn" onclick="startReview()" title="Start review">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="vocab-content" id="vocab-content">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="empty-title">No words yet</div>
+        <div class="empty-desc">Tap any word while chatting to look it up. Your vocabulary list builds itself.</div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-item" onclick="switchTab('chat')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <span class="tab-label">Chat</span>
+      </button>
+      <button class="tab-item active" onclick="switchTab('vocab')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+        <span class="tab-label">Words</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        <span class="tab-label">Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SETTINGS PAGE
+  ============================================================ -->
+  <div id="page-settings" class="page">
+    <div class="top-nav">
+      <div style="width:36px"></div>
+      <span class="nav-title">Settings</span>
+      <div style="width:36px"></div>
+    </div>
+
+    <div class="settings-content">
+
+      <!-- Profile -->
+      <div class="profile-card" id="profile-card">
+        <div class="profile-avatar" id="profile-avatar">?</div>
+        <div>
+          <div class="profile-name" id="profile-name">—</div>
+          <div class="profile-email" id="profile-email">—</div>
+        </div>
+      </div>
+
+      <!-- Language -->
+      <div class="settings-section">
+        <div class="settings-section-title">Language Style</div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
+              </svg>
+            </div>
+            <div class="settings-row-text">
+              <div class="settings-row-label">Michigan Style</div>
+              <div class="settings-row-desc">Great Lakes English — natural Midwest speech patterns</div>
+            </div>
+            <button class="toggle on" id="toggle-michigan" onclick="toggleMichigan(this)"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Key -->
+      <div class="settings-section">
+        <div class="settings-section-title">API</div>
+        <div class="settings-group">
+          <div class="settings-row" onclick="editApiKey()">
+            <div class="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+              </svg>
+            </div>
+            <div class="settings-row-text">
+              <div class="settings-row-label">Anthropic API Key</div>
+              <div class="settings-row-desc" id="api-key-status">Not configured</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" style="color:var(--text-tertiary)"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="settings-section">
+        <div class="settings-section-title">Appearance</div>
+        <div class="settings-group">
+          <div class="color-picker-row">
+            <div class="settings-row-label" style="margin-bottom:4px">Accent Color</div>
+            <div class="color-swatch-row" id="color-swatches">
+              <div class="color-swatch selected" style="background:#2563EB" data-color="#2563EB" onclick="setAccentColor(this)"></div>
+              <div class="color-swatch" style="background:#7C3AED" data-color="#7C3AED" onclick="setAccentColor(this)"></div>
+              <div class="color-swatch" style="background:#059669" data-color="#059669" onclick="setAccentColor(this)"></div>
+              <div class="color-swatch" style="background:#DC2626" data-color="#DC2626" onclick="setAccentColor(this)"></div>
+              <div class="color-swatch" style="background:#D97706" data-color="#D97706" onclick="setAccentColor(this)"></div>
+              <div class="color-swatch" style="background:#DB2777" data-color="#DB2777" onclick="setAccentColor(this)"></div>
+              <div class="color-swatch" style="background:#0891B2" data-color="#0891B2" onclick="setAccentColor(this)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="settings-section">
+        <div class="settings-section-title">Data</div>
+        <div class="settings-group">
+          <div class="settings-row" onclick="exportData()">
+            <div class="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <div class="settings-row-text">
+              <div class="settings-row-label">Export Vocabulary</div>
+              <div class="settings-row-desc">Download your word list as CSV</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" style="color:var(--text-tertiary)"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row" onclick="clearData()" style="color: #EF4444;">
+            <div class="settings-row-icon" style="background: rgba(239,68,68,0.12)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+              </svg>
+            </div>
+            <div class="settings-row-text">
+              <div class="settings-row-label" style="color:#EF4444">Clear All Data</div>
+              <div class="settings-row-desc">Removes all words and chat history</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sign out -->
+      <div class="settings-section">
+        <div class="settings-group">
+          <div class="settings-row" onclick="signOut()">
+            <div class="settings-row-icon" style="background: rgba(239,68,68,0.12)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </div>
+            <div class="settings-row-text">
+              <div class="settings-row-label" style="color:#EF4444">Sign Out</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 24px"></div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-item" onclick="switchTab('chat')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <span class="tab-label">Chat</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('vocab')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+        <span class="tab-label">Words</span>
+      </button>
+      <button class="tab-item active" onclick="switchTab('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        <span class="tab-label">Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       WORD TOOLTIP (small)
+  ============================================================ -->
+  <div id="word-tooltip">
+    <div class="tooltip-word" id="tt-word"></div>
+    <div class="tooltip-pos" id="tt-pos"></div>
+    <div class="tooltip-def" id="tt-def"><span class="loading-dot">•</span><span class="loading-dot" style="animation-delay:.2s">•</span><span class="loading-dot" style="animation-delay:.4s">•</span></div>
+    <div class="tooltip-more" onclick="openWordSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Full details
+    </div>
+  </div>
+
+  <!-- ============================================================
+       WORD DETAIL SHEET
+  ============================================================ -->
+  <div id="sheet-overlay" onclick="closeWordSheet()"></div>
+
+  <div id="word-sheet">
+    <div class="sheet-handle" id="sheet-handle"></div>
+
+    <div class="sheet-header">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="sheet-word-title" id="sheet-word"></div>
+          <div class="sheet-word-phonetic" id="sheet-phonetic"></div>
+          <div class="sheet-word-pos" id="sheet-pos"></div>
+        </div>
+        <button onclick="closeWordSheet()" style="background:var(--bg-input); border:none; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; color:var(--text-secondary); margin-top:4px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="sheet-body" id="sheet-body">
+      <!-- Dynamically filled -->
+    </div>
+
+    <div class="sheet-chat-divider" style="padding: 0 20px; flex-shrink:0;">
+      <span>Ask about this word</span>
+    </div>
+
+    <div class="sheet-chat-area" style="padding: 8px 20px 0;">
+      <div class="sheet-chat-messages" id="sheet-chat-messages"></div>
+    </div>
+
+    <div class="sheet-chat-input-row">
+      <input type="text" id="sheet-input" placeholder="Ask anything about this word…" onkeydown="handleSheetKey(event)">
+      <button class="sheet-send-btn" onclick="sendSheetChat()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       REVIEW OVERLAY (flashcards)
+  ============================================================ -->
+  <div id="review-overlay">
+    <div class="review-header">
+      <button class="review-close" onclick="closeReview()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="review-progress-bar">
+        <div class="review-progress-fill" id="review-progress-fill" style="width:0%"></div>
+      </div>
+      <div class="review-count" id="review-count">0 / 0</div>
+    </div>
+
+    <div class="review-card-area" id="review-card-area">
+      <!-- Dynamic flashcard -->
+    </div>
+
+    <div class="review-actions" id="review-actions" style="display:none">
+      <button class="review-btn hard" onclick="reviewAnswer(false)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        Hard
+      </button>
+      <button class="review-btn easy" onclick="reviewAnswer(true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18"><path d="M20 6L9 17l-5-5"/></svg>
+        Got it
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       API KEY MODAL
+  ============================================================ -->
+  <div id="api-key-modal">
+    <div class="api-key-card">
+      <div class="sheet-handle" style="margin: 0 auto 16px; flex-shrink:0;"></div>
+      <div class="api-key-title">Enter API Key</div>
+      <div class="api-key-desc">
+        Michigander uses Claude (Anthropic) for conversations and word explanations. 
+        Get your free key at <a class="api-key-link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+      </div>
+      <div class="auth-field" style="margin-bottom:14px">
+        <label>Anthropic API Key</label>
+        <input type="password" class="auth-input" id="api-key-input" placeholder="sk-ant-…">
+      </div>
+      <button class="btn-primary" onclick="saveApiKey()">Save Key</button>
+      <button onclick="closeApiKeyModal()" style="width:100%; padding:12px; background:none; border:none; color:var(--text-secondary); font-size:14px; cursor:pointer; margin-top:8px; font-family:var(--font-body);">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Snackbar -->
+  <div id="snackbar"></div>
+
+</div><!-- #app -->
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+'use strict';
+
+// ============================================================
+// STATE
+// ============================================================
+const State = {
+  currentUser: null,
+  currentPage: 'auth',
+  apiKey: '',
+  michiganMode: true,
+  accentColor: '#2563EB',
+  chatHistory: [],         // [{role, content}]
+  sheetChatHistory: [],    // for current word sheet
+  currentWord: null,
+  tooltipWord: null,
+  tooltipTimer: null,
+  wordStartTime: null,
+  db: null,
+  reviewWords: [],
+  reviewIndex: 0,
+  reviewCardFlipped: false,
+};
+
+// ============================================================
+// INDEXEDDB INIT
+// ============================================================
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('michigander_db', 2);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('word_cache')) {
+        db.createObjectStore('word_cache', { keyPath: 'word' });
+      }
+      if (!db.objectStoreNames.contains('vocab')) {
+        const vs = db.createObjectStore('vocab', { keyPath: 'word' });
+        vs.createIndex('date', 'date');
+      }
+      if (!db.objectStoreNames.contains('users')) {
+        db.createObjectStore('users', { keyPath: 'email' });
+      }
+    };
+    req.onsuccess = (e) => { State.db = e.target.result; resolve(); };
+    req.onerror = reject;
+  });
+}
+
+function dbGet(store, key) {
+  return new Promise((resolve) => {
+    const tx = State.db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => resolve(null);
+  });
+}
+
+function dbPut(store, obj) {
+  return new Promise((resolve) => {
+    const tx = State.db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(obj);
+    tx.oncomplete = resolve;
+    tx.onerror = resolve;
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((resolve) => {
+    const tx = State.db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => resolve([]);
+  });
+}
+
+function dbClear(store) {
+  return new Promise((resolve) => {
+    const tx = State.db.transaction(store, 'readwrite');
+    tx.objectStore(store).clear();
+    tx.oncomplete = resolve;
+    tx.onerror = resolve;
+  });
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+let authMode = 'login';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && mode === 'login') || (i === 1 && mode === 'signup'));
+  });
+  document.getElementById('field-name').style.display = mode === 'signup' ? 'flex' : 'none';
+  document.getElementById('auth-submit-btn').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('input-email').value.trim();
+  const password = document.getElementById('input-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+
+  if (!email || !password) {
+    showError(errEl, 'Please fill in all fields.');
+    return;
+  }
+  if (!email.includes('@')) {
+    showError(errEl, 'Please enter a valid email address.');
+    return;
+  }
+  if (password.length < 6) {
+    showError(errEl, 'Password must be at least 6 characters.');
+    return;
+  }
+
+  const btn = document.getElementById('auth-submit-btn');
+  btn.textContent = authMode === 'login' ? 'Signing in…' : 'Creating account…';
+  btn.disabled = true;
+
+  await new Promise(r => setTimeout(r, 400));
+
+  if (authMode === 'signup') {
+    const name = document.getElementById('input-name').value.trim() || email.split('@')[0];
+    const existing = await dbGet('users', email);
+    if (existing) {
+      showError(errEl, 'An account with this email already exists.');
+      btn.textContent = 'Create Account';
+      btn.disabled = false;
+      return;
+    }
+    await dbPut('users', { email, password, name, createdAt: Date.now() });
+    State.currentUser = { email, name };
+  } else {
+    const user = await dbGet('users', email);
+    if (!user || user.password !== password) {
+      showError(errEl, 'Incorrect email or password.');
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+      return;
+    }
+    State.currentUser = { email, name: user.name || email.split('@')[0] };
+  }
+
+  localStorage.setItem('mich_current_user', JSON.stringify(State.currentUser));
+  btn.disabled = false;
+  postLogin();
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = 'msgIn 0.3s ease both';
+}
+
+function postLogin() {
+  loadSettings();
+  updateProfileCard();
+  navigateTo('chat');
+  checkApiKey();
+}
+
+function signOut() {
+  if (!confirm('Sign out?')) return;
+  localStorage.removeItem('mich_current_user');
+  State.currentUser = null;
+  State.chatHistory = [];
+  navigateTo('auth');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function loadSettings() {
+  const saved = localStorage.getItem('mich_settings');
+  if (saved) {
+    const s = JSON.parse(saved);
+    State.michiganMode = s.michiganMode ?? true;
+    State.accentColor = s.accentColor || '#2563EB';
+    State.apiKey = s.apiKey || '';
+  }
+  applyAccentColor(State.accentColor);
+  document.getElementById('toggle-michigan').classList.toggle('on', State.michiganMode);
+  updateApiKeyStatus();
+}
+
+function saveSettings() {
+  localStorage.setItem('mich_settings', JSON.stringify({
+    michiganMode: State.michiganMode,
+    accentColor: State.accentColor,
+    apiKey: State.apiKey,
+  }));
+}
+
+function toggleMichigan(btn) {
+  State.michiganMode = !State.michiganMode;
+  btn.classList.toggle('on', State.michiganMode);
+  saveSettings();
+  showSnackbar(State.michiganMode ? 'Michigan style on 🏒' : 'Standard English');
+}
+
+function setAccentColor(el) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  State.accentColor = el.dataset.color;
+  applyAccentColor(State.accentColor);
+  saveSettings();
+}
+
+function applyAccentColor(hex) {
+  const root = document.documentElement;
+  root.style.setProperty('--accent', hex);
+  root.style.setProperty('--accent-light', lightenHex(hex, 20));
+  root.style.setProperty('--accent-subtle', hex + '1F');
+  root.style.setProperty('--accent-glow', hex + '40');
+}
+
+function lightenHex(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + amount);
+  const g = Math.min(255, ((num >> 8) & 0xff) + amount);
+  const b = Math.min(255, (num & 0xff) + amount);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+function updateProfileCard() {
+  if (!State.currentUser) return;
+  document.getElementById('profile-name').textContent = State.currentUser.name || '—';
+  document.getElementById('profile-email').textContent = State.currentUser.email || '—';
+  document.getElementById('profile-avatar').textContent = (State.currentUser.name || '?')[0].toUpperCase();
+}
+
+// API Key
+function checkApiKey() {
+  if (!State.apiKey) {
+    setTimeout(() => showApiKeyModal(), 800);
+  }
+}
+
+function updateApiKeyStatus() {
+  const el = document.getElementById('api-key-status');
+  el.textContent = State.apiKey ? 'Configured ✓' : 'Not configured';
+}
+
+function showApiKeyModal() {
+  document.getElementById('api-key-modal').classList.add('visible');
+  setTimeout(() => document.getElementById('api-key-input').focus(), 400);
+}
+
+function closeApiKeyModal() {
+  document.getElementById('api-key-modal').classList.remove('visible');
+}
+
+function editApiKey() {
+  document.getElementById('api-key-input').value = State.apiKey || '';
+  showApiKeyModal();
+}
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { showSnackbar('Please enter an API key'); return; }
+  State.apiKey = key;
+  saveSettings();
+  updateApiKeyStatus();
+  closeApiKeyModal();
+  showSnackbar('API key saved ✓');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+  });
+  const el = document.getElementById(`page-${page}`);
+  if (el) el.classList.add('active');
+  State.currentPage = page;
+  if (page === 'vocab') renderVocabPage();
+}
+
+function switchTab(tab) {
+  navigateTo(tab);
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!State.apiKey) { showApiKeyModal(); return; }
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Hide welcome
+  const welcome = document.getElementById('chat-welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  appendMessage('user', text);
+  State.chatHistory.push({ role: 'user', content: text });
+
+  const typingEl = appendTyping();
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const reply = await callClaude(buildChatMessages(), 'You are a friendly English conversation partner. ' +
+      (State.michiganMode ? 'Use Great Lakes / Midwest American English — natural, warm, and down-to-earth. Occasionally use regional expressions naturally. ' : '') +
+      'Keep replies conversational and engaging (2-4 sentences usually). Never use markdown formatting.'
+    );
+    typingEl.remove();
+    const msgEl = appendMessage('ai', reply);
+    makeWordsClickable(msgEl.querySelector('.msg-bubble'));
+    State.chatHistory.push({ role: 'assistant', content: reply });
+    saveVocabFromChat(reply);
+  } catch(err) {
+    typingEl.remove();
+    appendMessage('ai', 'Sorry, something went wrong. Please check your API key in Settings.');
+  }
+
+  document.getElementById('send-btn').disabled = false;
+}
+
+function sendPrompt(btn) {
+  const text = btn.textContent.trim().replace(/^[^\w]+/, '');
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+function buildChatMessages() {
+  return State.chatHistory.slice(-20);
+}
+
+function appendMessage(role, text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">
+      ${role === 'ai' 
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 012 2v2a2 2 0 012 2v1h1a2 2 0 012 2v3a2 2 0 01-2 2h-1v1a2 2 0 01-2 2h-4a2 2 0 01-2-2v-1H7a2 2 0 01-2-2v-3a2 2 0 012-2h1V8a2 2 0 012-2V4a2 2 0 012-2z"/></svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+      }
+    </div>
+    <div class="msg-body">
+      <div class="msg-bubble">${escapeHtml(text)}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/></svg>
+    </div>
+    <div class="msg-body">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// WORD TOKENIZATION
+// ============================================================
+function makeWordsClickable(el) {
+  const html = el.innerHTML;
+  // Wrap each English word token
+  const newHtml = html.replace(
+    /\b([a-zA-Z][a-zA-Z'\-]*[a-zA-Z]|[a-zA-Z])\b/g,
+    (match) => `<span class="word-token" data-word="${match.toLowerCase()}" onclick="wordTapped(event, '${match.toLowerCase()}')">${match}</span>`
+  );
+  el.innerHTML = newHtml;
+}
+
+// ============================================================
+// WORD TOOLTIP
+// ============================================================
+async function wordTapped(event, word) {
+  event.stopPropagation();
+  clearTimeout(State.tooltipTimer);
+
+  State.tooltipWord = word;
+  State.wordStartTime = Date.now();
+
+  const tooltip = document.getElementById('word-tooltip');
+  const tt_word = document.getElementById('tt-word');
+  const tt_pos = document.getElementById('tt-pos');
+  const tt_def = document.getElementById('tt-def');
+
+  tt_word.textContent = word;
+  tt_pos.textContent = '';
+  tt_def.innerHTML = `<span class="loading-dot">•</span><span class="loading-dot" style="animation-delay:.2s">•</span><span class="loading-dot" style="animation-delay:.4s">•</span>`;
+
+  // Position tooltip near the tapped element
+  const rect = event.target.getBoundingClientRect();
+  const tooltipW = 220;
+  let left = rect.left + rect.width / 2 - tooltipW / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - tooltipW - 12));
+  let top = rect.top - 10;
+  // If too close to top, show below
+  if (top < 80) top = rect.bottom + 8;
+  else top -= 8;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  tooltip.style.bottom = 'auto';
+  tooltip.classList.add('visible');
+
+  // Fetch quick def
+  const cached = await dbGet('word_cache', word);
+  if (cached) {
+    tt_pos.textContent = cached.pos || '';
+    tt_def.textContent = cached.shortDef || cached.definition || '';
+  } else {
+    try {
+      const quick = await callClaude([{role:'user', content:`Give a single-line definition (max 15 words) of the English word "${word}". Format exactly: [part_of_speech] definition. Example: [verb] to move quickly from one place to another`}],
+        'You are a concise dictionary. Reply with ONLY the formatted definition, nothing else.');
+      const match = quick.match(/\[([^\]]+)\]\s*(.*)/);
+      if (match) {
+        tt_pos.textContent = match[1];
+        tt_def.textContent = match[2];
+      } else {
+        tt_def.textContent = quick;
+      }
+    } catch {
+      tt_def.textContent = 'Tap "Full details" for more info.';
+    }
+  }
+
+  // Auto-close
+  State.tooltipTimer = setTimeout(hideTooltip, 4000);
+}
+
+function hideTooltip() {
+  document.getElementById('word-tooltip').classList.remove('visible');
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#word-tooltip') && !e.target.closest('.word-token')) {
+    hideTooltip();
+  }
+});
+
+// ============================================================
+// WORD DETAIL SHEET
+// ============================================================
+async function openWordSheet() {
+  const word = State.tooltipWord;
+  if (!word) return;
+  State.currentWord = word;
+  State.sheetChatHistory = [];
+  hideTooltip();
+
+  document.getElementById('sheet-word').textContent = word;
+  document.getElementById('sheet-phonetic').textContent = '';
+  document.getElementById('sheet-pos').textContent = '…';
+
+  const body = document.getElementById('sheet-body');
+  body.innerHTML = `
+    <div>
+      <div class="sheet-section-title">Definition</div>
+      <div class="shimmer shimmer-block" style="width:90%"></div>
+      <div class="shimmer shimmer-block" style="width:70%; margin-top:6px"></div>
+    </div>
+    <div>
+      <div class="sheet-section-title">Usage & Register</div>
+      <div class="shimmer shimmer-block" style="width:50%"></div>
+    </div>
+    <div>
+      <div class="sheet-section-title">Synonyms</div>
+      <div class="shimmer shimmer-block" style="width:80%"></div>
+    </div>`;
+
+  document.getElementById('sheet-chat-messages').innerHTML = '';
+
+  document.getElementById('sheet-overlay').classList.add('visible');
+  document.getElementById('word-sheet').classList.add('open');
+  document.body.classList.add('scroll-lock');
+
+  setupSheetDragToDismiss();
+
+  // Check cache
+  const cached = await dbGet('word_cache', word);
+  if (cached && cached.fullDetail) {
+    renderSheetDetail(cached);
+    return;
+  }
+
+  // Generate AI detail
+  try {
+    const userLevel = estimateUserLevel();
+    const detailJson = await callClaude([{
+      role: 'user',
+      content: `Generate a detailed English word entry for "${word}". The user's estimated English level is ${userLevel}.
+Respond ONLY with valid JSON in this exact structure:
+{
+  "word": "${word}",
+  "pos": "noun/verb/adjective/etc",
+  "phonetic": "/fəˈnetɪk/",
+  "definition": "full clear definition",
+  "shortDef": "max 12 word definition",
+  "register": "formal/informal/neutral",
+  "usageNote": "1-2 sentences about how and when to use this word naturally${State.michiganMode ? ', with a Michigan/Midwest angle if relevant' : ''}",
+  "examples": ["example sentence 1", "example sentence 2"],
+  "synonyms": ["word1", "word2", "word3"],
+  "derivatives": ["derivative1", "derivative2"],
+  "michiganNote": "${State.michiganMode ? 'Optional: how this word sounds or is used in Midwest/Great Lakes English' : ''}"
+}`
+    }], 'You are a linguistic expert. Return ONLY valid JSON, no markdown, no explanation.');
+
+    let data;
+    try {
+      const clean = detailJson.replace(/```json|```/g, '').trim();
+      data = JSON.parse(clean);
+    } catch {
+      data = { word, pos: '', definition: detailJson, shortDef: '', register: 'neutral', examples: [], synonyms: [], derivatives: [] };
+    }
+
+    data.fullDetail = true;
+    await dbPut('word_cache', data);
+    renderSheetDetail(data);
+
+    // Track in vocab
+    trackVocabWord(word, data);
+
+  } catch(err) {
+    body.innerHTML = `<div class="sheet-section-content" style="color:var(--text-secondary)">Couldn't load details. Check your API key in Settings.</div>`;
+  }
+}
+
+function renderSheetDetail(data) {
+  document.getElementById('sheet-pos').textContent = data.pos || '';
+  document.getElementById('sheet-phonetic').textContent = data.phonetic || '';
+
+  const registerClass = data.register === 'formal' ? 'formal' : 'informal';
+  const registerLabel = data.register === 'formal' ? '📝 Formal / Written' : data.register === 'informal' ? '💬 Informal / Spoken' : '⚖️ Neutral';
+
+  const synonymTags = (data.synonyms || []).map(w =>
+    `<span class="sheet-tag" onclick="openWordFromSheet('${w}')">${w}</span>`
+  ).join('');
+
+  const derivTags = (data.derivatives || []).map(w =>
+    `<span class="sheet-tag" onclick="openWordFromSheet('${w}')">${w}</span>`
+  ).join('');
+
+  const examples = (data.examples || []).map(ex =>
+    `<div style="padding:10px 12px; background:var(--bg-input); border-radius:10px; font-size:14px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px; border-left:2px solid var(--accent); padding-left:12px;">${escapeHtml(ex)}</div>`
+  ).join('');
+
+  const michiganSection = (State.michiganMode && data.michiganNote) ? `
+    <div>
+      <div class="sheet-section-title">🏒 Michigan Note</div>
+      <div class="sheet-section-content">${escapeHtml(data.michiganNote)}</div>
+    </div>` : '';
+
+  document.getElementById('sheet-body').innerHTML = `
+    <div>
+      <div class="sheet-section-title">Definition</div>
+      <div class="sheet-section-content">${escapeHtml(data.definition || '')}</div>
+    </div>
+    ${data.usageNote ? `<div>
+      <div class="sheet-section-title">Usage</div>
+      <div class="sheet-section-content">${escapeHtml(data.usageNote)}</div>
+    </div>` : ''}
+    <div>
+      <div class="sheet-section-title">Register</div>
+      <span class="sheet-register-badge ${registerClass}">${registerLabel}</span>
+    </div>
+    ${examples ? `<div>
+      <div class="sheet-section-title">Examples</div>
+      ${examples}
+    </div>` : ''}
+    ${synonymTags ? `<div>
+      <div class="sheet-section-title">Synonyms</div>
+      <div class="sheet-tag-row">${synonymTags}</div>
+    </div>` : ''}
+    ${derivTags ? `<div>
+      <div class="sheet-section-title">Derivatives</div>
+      <div class="sheet-tag-row">${derivTags}</div>
+    </div>` : ''}
+    ${michiganSection}
+    <div style="height:8px"></div>`;
+}
+
+function openWordFromSheet(word) {
+  closeWordSheet();
+  State.tooltipWord = word;
+  setTimeout(() => openWordSheet(), 350);
+}
+
+function closeWordSheet() {
+  document.getElementById('word-sheet').classList.remove('open');
+  document.getElementById('sheet-overlay').classList.remove('visible');
+  document.body.classList.remove('scroll-lock');
+
+  // Record time spent on word
+  if (State.currentWord && State.wordStartTime) {
+    const timeSpent = Date.now() - State.wordStartTime;
+    updateWordTimeSpent(State.currentWord, timeSpent);
+  }
+}
+
+// Sheet drag-to-dismiss
+function setupSheetDragToDismiss() {
+  const sheet = document.getElementById('word-sheet');
+  const handle = document.getElementById('sheet-handle');
+  let startY = 0, currentY = 0, isDragging = false;
+
+  function onStart(e) {
+    const target = e.target;
+    const body = document.getElementById('sheet-body');
+    // Only drag from handle or header area at scroll top
+    if (!target.closest('.sheet-handle') && !target.closest('.sheet-header')) return;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    isDragging = true;
+    sheet.style.transition = 'none';
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    currentY = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+    if (currentY < 0) currentY = 0;
+    sheet.style.transform = `translateY(${currentY}px)`;
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    sheet.style.transition = '';
+    if (currentY > 160) {
+      closeWordSheet();
+    } else {
+      sheet.style.transform = 'translateY(0)';
+    }
+    currentY = 0;
+  }
+
+  sheet.addEventListener('touchstart', onStart, { passive: true });
+  sheet.addEventListener('touchmove', onMove, { passive: true });
+  sheet.addEventListener('touchend', onEnd);
+  sheet.addEventListener('mousedown', onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+}
+
+// Sheet mini-chat
+async function sendSheetChat() {
+  const input = document.getElementById('sheet-input');
+  const text = input.value.trim();
+  if (!text || !State.currentWord) return;
+  input.value = '';
+
+  const msgsEl = document.getElementById('sheet-chat-messages');
+
+  const userDiv = document.createElement('div');
+  userDiv.className = 'sheet-msg user';
+  userDiv.textContent = text;
+  msgsEl.appendChild(userDiv);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  State.sheetChatHistory.push({ role: 'user', content: text });
+
+  // Loading
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'sheet-msg ai';
+  loadDiv.innerHTML = `<span class="loading-dot">•</span><span class="loading-dot" style="animation-delay:.2s">•</span><span class="loading-dot" style="animation-delay:.4s">•</span>`;
+  msgsEl.appendChild(loadDiv);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  try {
+    const reply = await callClaude(
+      [{ role: 'user', content: `We're discussing the word "${State.currentWord}". ${text}` },
+       ...State.sheetChatHistory.slice(-8)],
+      `You are a linguistics tutor helping someone understand the English word "${State.currentWord}". Be concise and helpful. No markdown.`
+    );
+    loadDiv.textContent = reply;
+    State.sheetChatHistory.push({ role: 'assistant', content: reply });
+  } catch {
+    loadDiv.textContent = 'Sorry, something went wrong.';
+  }
+
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function handleSheetKey(e) {
+  if (e.key === 'Enter') sendSheetChat();
+}
+
+// ============================================================
+// CLAUDE API CALL
+// ============================================================
+async function callClaude(messages, systemPrompt = '') {
+  if (!State.apiKey) throw new Error('No API key');
+
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    messages,
+  };
+  if (systemPrompt) body.system = systemPrompt;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': State.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.content.map(b => b.type === 'text' ? b.text : '').join('').trim();
+}
+
+// ============================================================
+// VOCABULARY / SPACED REPETITION
+// ============================================================
+function estimateUserLevel() {
+  const words = Object.keys(State.trackedWords || {});
+  if (words.length < 10) return 'beginner';
+  if (words.length < 50) return 'intermediate';
+  return 'advanced';
+}
+
+State.trackedWords = {};
+
+async function trackVocabWord(word, data) {
+  const existing = await dbGet('vocab', word);
+  if (existing) return; // already tracked
+
+  const entry = {
+    word,
+    pos: data.pos || '',
+    shortDef: data.shortDef || data.definition || '',
+    definition: data.definition || '',
+    date: new Date().toDateString(),
+    timestamp: Date.now(),
+    timeSpent: 0,
+    reviewCount: 0,
+    nextReview: Date.now() + 86400000, // tomorrow
+    ease: 2.5,
+    interval: 1,
+  };
+
+  await dbPut('vocab', entry);
+  State.trackedWords[word] = true;
+}
+
+async function updateWordTimeSpent(word, ms) {
+  const entry = await dbGet('vocab', word);
+  if (!entry) return;
+  entry.timeSpent = (entry.timeSpent || 0) + ms;
+  await dbPut('vocab', entry);
+}
+
+async function saveVocabFromChat(text) {
+  // Mark all clicked words from today as potentially reviewed
+  // (actual tracking happens via wordTapped)
+}
+
+// ============================================================
+// VOCAB PAGE
+// ============================================================
+async function renderVocabPage() {
+  const container = document.getElementById('vocab-content');
+  const allWords = await dbGetAll('vocab');
+
+  if (allWords.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="empty-title">No words yet</div>
+        <div class="empty-desc">Tap any word while chatting to look it up. Your vocabulary list builds itself.</div>
+      </div>`;
+    return;
+  }
+
+  // Group by date
+  const grouped = {};
+  const now = Date.now();
+  allWords.sort((a, b) => b.timestamp - a.timestamp).forEach(w => {
+    const d = w.date || 'Unknown';
+    if (!grouped[d]) grouped[d] = [];
+    grouped[d].push(w);
+  });
+
+  let html = '';
+  for (const [date, words] of Object.entries(grouped)) {
+    const isToday = date === new Date().toDateString();
+    const label = isToday ? 'Today' : date;
+
+    html += `<div class="vocab-date-group">
+      <div class="vocab-date-label">${label}</div>
+      <div class="vocab-card-grid">`;
+
+    words.forEach(w => {
+      const isDue = w.nextReview && w.nextReview <= now;
+      const dotClass = w.reviewCount > 5 ? 'mastered' : isDue ? 'due' : '';
+      const dotLabel = w.reviewCount > 5 ? 'Mastered' : isDue ? 'Due for review' : 'Not yet reviewed';
+
+      html += `
+        <div class="vocab-word-card ${w.reviewCount > 0 ? 'reviewed' : ''}" onclick="openVocabWord('${w.word}')">
+          <div class="vocab-card-word">${escapeHtml(w.word)}</div>
+          <div class="vocab-card-def">${escapeHtml(w.shortDef || w.definition || '')}</div>
+          <div class="vocab-card-status">
+            <div class="vocab-dot ${dotClass}"></div>
+            <span class="vocab-dot-label">${dotLabel}</span>
+          </div>
+        </div>`;
+    });
+
+    html += `</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function openVocabWord(word) {
+  State.tooltipWord = word;
+  openWordSheet();
+}
+
+// ============================================================
+// REVIEW / FLASHCARDS (Spaced Repetition)
+// ============================================================
+async function startReview() {
+  const allWords = await dbGetAll('vocab');
+  if (allWords.length === 0) {
+    showSnackbar('No words to review yet!');
+    return;
+  }
+
+  const now = Date.now();
+  // Words due for review, sorted by time-spent (spend more time on high-effort words)
+  let due = allWords.filter(w => !w.nextReview || w.nextReview <= now);
+  if (due.length === 0) {
+    // All mastered — do a refresh anyway
+    due = allWords.sort((a, b) => (a.nextReview || 0) - (b.nextReview || 0)).slice(0, 10);
+    showSnackbar('All caught up! Quick refresh instead.');
+  }
+
+  // Sort: prioritize words user spent most time on (harder words)
+  due.sort((a, b) => (b.timeSpent || 0) - (a.timeSpent || 0));
+  State.reviewWords = due.slice(0, 20);
+  State.reviewIndex = 0;
+  State.reviewCardFlipped = false;
+
+  document.getElementById('review-overlay').classList.add('open');
+  renderReviewCard();
+}
+
+function renderReviewCard() {
+  const words = State.reviewWords;
+  const i = State.reviewIndex;
+  const total = words.length;
+
+  document.getElementById('review-count').textContent = `${i + 1} / ${total}`;
+  document.getElementById('review-progress-fill').style.width = `${(i / total) * 100}%`;
+  document.getElementById('review-actions').style.display = 'none';
+
+  const area = document.getElementById('review-card-area');
+  const word = words[i];
+
+  area.innerHTML = `
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="flashcard-inner">
+        <div class="flashcard-face flashcard-front">
+          <div class="flashcard-front-word">${escapeHtml(word.word)}</div>
+          <div class="flashcard-hint">Tap to reveal</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="flashcard-back-def">${escapeHtml(word.shortDef || word.definition || '')}</div>
+          ${word.pos ? `<div class="flashcard-back-example">${escapeHtml(word.pos)}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+  State.reviewCardFlipped = false;
+}
+
+function flipCard() {
+  const card = document.getElementById('flashcard');
+  if (!card) return;
+  card.classList.toggle('flipped');
+  State.reviewCardFlipped = !State.reviewCardFlipped;
+  if (State.reviewCardFlipped) {
+    document.getElementById('review-actions').style.display = 'flex';
+  }
+}
+
+async function reviewAnswer(easy) {
+  const word = State.reviewWords[State.reviewIndex];
+  const entry = await dbGet('vocab', word.word);
+  if (entry) {
+    // SM-2 spaced repetition
+    const q = easy ? 5 : 2;
+    let ease = (entry.ease || 2.5) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    ease = Math.max(1.3, ease);
+    const interval = easy
+      ? Math.round((entry.interval || 1) * ease)
+      : 1;
+    entry.ease = ease;
+    entry.interval = interval;
+    entry.nextReview = Date.now() + interval * 86400000;
+    entry.reviewCount = (entry.reviewCount || 0) + 1;
+    await dbPut('vocab', entry);
+  }
+
+  State.reviewIndex++;
+  if (State.reviewIndex >= State.reviewWords.length) {
+    showReviewComplete();
+  } else {
+    renderReviewCard();
+  }
+}
+
+function showReviewComplete() {
+  document.getElementById('review-count').textContent = '✓';
+  document.getElementById('review-progress-fill').style.width = '100%';
+  document.getElementById('review-actions').style.display = 'none';
+  document.getElementById('review-card-area').innerHTML = `
+    <div class="review-complete">
+      <div class="review-complete-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="empty-title">All done!</div>
+      <div class="empty-desc">Great session. Come back tomorrow for your next review.</div>
+      <button class="btn-primary" style="max-width:240px; margin-top:12px" onclick="closeReview()">Back to Words</button>
+    </div>`;
+}
+
+function closeReview() {
+  document.getElementById('review-overlay').classList.remove('open');
+  renderVocabPage();
+}
+
+// ============================================================
+// DATA UTILITIES
+// ============================================================
+async function exportData() {
+  const words = await dbGetAll('vocab');
+  if (words.length === 0) { showSnackbar('No words to export'); return; }
+  const csv = ['word,definition,pos,date,reviewCount']
+    .concat(words.map(w => `"${w.word}","${(w.shortDef||'').replace(/"/g,'""')}","${w.pos||''}","${w.date||''}",${w.reviewCount||0}`))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'michigander-vocab.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showSnackbar('Vocabulary exported!');
+}
+
+async function clearData() {
+  if (!confirm('Clear all words and chat history? This cannot be undone.')) return;
+  await dbClear('vocab');
+  await dbClear('word_cache');
+  State.chatHistory = [];
+  State.trackedWords = {};
+  document.getElementById('chat-messages').innerHTML = '';
+  const welcome = document.getElementById('chat-welcome');
+  if (welcome) welcome.style.display = 'flex';
+  showSnackbar('All data cleared');
+  renderVocabPage();
+}
+
+// ============================================================
+// NEW CHAT
+// ============================================================
+function showNewChatConfirm() {
+  if (State.chatHistory.length === 0) return;
+  if (!confirm('Start a new chat? Current chat history will be cleared.')) return;
+  State.chatHistory = [];
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '';
+  const welcome = document.getElementById('chat-welcome');
+  if (welcome) {
+    welcome.style.display = 'flex';
+  } else {
+    // Re-insert welcome
+    msgs.innerHTML = `<div id="chat-welcome" class="empty-state" style="height:auto; padding: 32px 20px 16px; pointer-events:all;">
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="empty-title">Fresh start!</div>
+      <div class="empty-desc">Chat in English on anything you like.</div>
+      <div class="welcome-prompts" style="width:100%; pointer-events:all;">
+        <button class="welcome-prompt-btn" onclick="sendPrompt(this)"><span class="prompt-emoji">🏒</span>Tell me something cool about Michigan sports</button>
+        <button class="welcome-prompt-btn" onclick="sendPrompt(this)"><span class="prompt-emoji">🗺️</span>Let's talk about travel and adventure</button>
+        <button class="welcome-prompt-btn" onclick="sendPrompt(this)"><span class="prompt-emoji">🎬</span>What movies have you seen lately?</button>
+      </div>
+    </div>`;
+  }
+}
+
+function showWordOfDay() {
+  const words = ['meander','ephemeral','serendipity','laconic','wanderlust','luminous'];
+  const w = words[Math.floor(Math.random() * words.length)];
+  State.tooltipWord = w;
+  openWordSheet();
+}
+
+// ============================================================
+// SNACKBAR
+// ============================================================
+let snackTimer;
+function showSnackbar(msg) {
+  clearTimeout(snackTimer);
+  const el = document.getElementById('snackbar');
+  el.textContent = msg;
+  el.classList.add('show');
+  snackTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  await initDB();
+
+  // Restore session
+  const saved = localStorage.getItem('mich_current_user');
+  if (saved) {
+    try {
+      State.currentUser = JSON.parse(saved);
+      loadSettings();
+      updateProfileCard();
+      navigateTo('chat');
+    } catch {
+      navigateTo('auth');
+    }
+  }
+
+  // Load all tracked vocab into memory
+  const allWords = await dbGetAll('vocab');
+  allWords.forEach(w => { State.trackedWords[w.word] = true; });
+}
+
+init();
+</script>
+</body>
+</html>

@@ -3271,7 +3271,7 @@ async function callAI(messages, systemPrompt = '') {
 
 async function callClaude(messages, systemPrompt = '') {
   if (!State.claudeKey) throw new Error('No Claude API key configured');
-  const body = { model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages };
+  const body = { model: 'claude-sonnet-4-5', max_tokens: 1000, messages };
   if (systemPrompt) body.system = systemPrompt;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -3354,22 +3354,36 @@ function initRecognition() {
   return rec;
 }
 
-function toggleVoiceMode() {
+async function toggleVoiceMode() {
   if (!State.voiceModeOpen) {
-    openVoiceMode();
+    await openVoiceMode();
   } else {
     closeVoiceMode();
   }
 }
 
-function openVoiceMode() {
+async function openVoiceMode() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    showSnackbar('Speech not supported in this browser');
+    showSnackbar('Speech recognition not supported — try Chrome or Safari');
     return;
   }
   const hasKey = State.aiProvider === 'claude' ? !!State.claudeKey : !!State.openaiKey;
   if (!hasKey) { showApiKeyModal(); return; }
+
+  // Request mic permission explicitly before opening the sheet
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      showSnackbar('Microphone access denied — allow it in browser settings');
+    } else if (err.name === 'NotFoundError') {
+      showSnackbar('No microphone found on this device');
+    } else {
+      showSnackbar('Could not access microphone: ' + err.message);
+    }
+    return;
+  }
 
   State.voiceModeOpen = true;
   document.getElementById('voice-mode-sheet').classList.add('open');

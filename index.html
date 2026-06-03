@@ -525,6 +525,8 @@ html, body {
   gap: 8px;
   align-items: flex-end;
   flex-shrink: 0;
+  position: relative;
+  z-index: 220;  /* above voice-overlay and voice-mode-sheet */
 }
 
 .chat-input-wrapper {
@@ -1566,9 +1568,22 @@ html, body {
 /* Scroll lock */
 body.scroll-lock { overflow: hidden; }
 
-/* ============================================================
-   VOICE / SPEECH STYLES
-============================================================ */
+/* Voice overlay — separate from sheet-overlay */
+#voice-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 195;   /* below voice-mode-sheet (z-index 196) but above chat */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--transition-smooth);
+}
+#voice-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Voice / Speech styles */
 .mic-btn {
   width: 40px;
   height: 40px;
@@ -1982,6 +1997,9 @@ input, textarea, .msg-bubble, .sheet-section-content, .sheet-msg {
     </div>
     <div class="voice-preview-text placeholder" id="voice-preview-text">Listening…</div>
   </div>
+
+  <!-- Voice overlay (separate from sheet-overlay to avoid mic-btn conflict) -->
+  <div id="voice-overlay" onclick="closeVoiceMode()"></div>
 
   <!-- Voice Mode Sheet -->
   <div id="voice-mode-sheet">
@@ -3434,8 +3452,6 @@ function openVoiceMode() {
   console.log('[Voice] hasKey=', hasKey, 'provider=', State.aiProvider);
 
   if (!hasKey) {
-    // 确保先关掉任何已有的 overlay，再开 modal
-    document.getElementById('sheet-overlay').classList.remove('visible');
     showSnackbar('⚙️ Set your API key in Settings first');
     setTimeout(() => showApiKeyModal(), 600);
     return;
@@ -3443,8 +3459,7 @@ function openVoiceMode() {
 
   State.voiceModeOpen = true;
   document.getElementById('voice-mode-sheet').classList.add('open');
-  document.getElementById('sheet-overlay').classList.add('visible');
-  document.getElementById('sheet-overlay').onclick = closeVoiceMode;
+  document.getElementById('voice-overlay').classList.add('visible');
   setVmsStatus('Tap the mic and speak');
   document.getElementById('vms-transcript').textContent = '';
 }
@@ -3454,8 +3469,7 @@ function closeVoiceMode() {
   stopListening();
   stopSpeaking();
   document.getElementById('voice-mode-sheet').classList.remove('open');
-  document.getElementById('sheet-overlay').classList.remove('visible');
-  document.getElementById('sheet-overlay').onclick = closeWordSheet;
+  document.getElementById('voice-overlay').classList.remove('visible');
   document.getElementById('big-mic-btn').classList.remove('listening');
   document.getElementById('mic-btn').classList.remove('listening');
 }

@@ -3343,47 +3343,23 @@ function stopSpeaking() {
 }
 
 // ── Speech Recognition ───────────────────────────────────────
-function initRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return null;
-  const rec = new SpeechRecognition();
-  rec.continuous     = false;
-  rec.interimResults = true;
-  rec.lang           = 'en-US';
-  rec.maxAlternatives = 1;
-  return rec;
-}
 
 async function toggleVoiceMode() {
   if (!State.voiceModeOpen) {
-    await openVoiceMode();
+    openVoiceMode();   // intentionally NOT awaited — must stay sync for iOS
   } else {
     closeVoiceMode();
   }
 }
 
-async function openVoiceMode() {
+function openVoiceMode() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    showSnackbar('Speech recognition not supported — try Chrome or Safari');
+    showSnackbar('Speech not supported — try Safari or Chrome');
     return;
   }
   const hasKey = State.aiProvider === 'claude' ? !!State.claudeKey : !!State.openaiKey;
   if (!hasKey) { showApiKeyModal(); return; }
-
-  // Request mic permission explicitly before opening the sheet
-  try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (err) {
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      showSnackbar('Microphone access denied — allow it in browser settings');
-    } else if (err.name === 'NotFoundError') {
-      showSnackbar('No microphone found on this device');
-    } else {
-      showSnackbar('Could not access microphone: ' + err.message);
-    }
-    return;
-  }
 
   State.voiceModeOpen = true;
   document.getElementById('voice-mode-sheet').classList.add('open');
@@ -3410,7 +3386,7 @@ function setVmsStatus(msg) {
   if (el) el.textContent = msg;
 }
 
-async function toggleListening() {
+function toggleListening() {
   if (State.isListening) {
     stopListening();
   } else {
@@ -3419,12 +3395,19 @@ async function toggleListening() {
 }
 
 function startListening() {
-  const rec = initRecognition();
-  if (!rec) { showSnackbar('Microphone not available'); return; }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { showSnackbar('Speech not supported in this browser'); return; }
+
+  // Create fresh instance every time (iOS requires this)
+  const rec = new SpeechRecognition();
+  rec.continuous     = false;
+  rec.interimResults = true;
+  rec.lang           = 'en-US';
+  rec.maxAlternatives = 1;
 
   stopSpeaking();
-  State.recognition = rec;
-  State.isListening = true;
+  State.recognition  = rec;
+  State.isListening  = true;
 
   document.getElementById('big-mic-btn').classList.add('listening');
   document.getElementById('mic-btn').classList.add('listening');
@@ -3444,9 +3427,18 @@ function startListening() {
   };
 
   rec.onerror = (e) => {
-    const msgs = { 'no-speech':'No speech detected', 'not-allowed':'Mic permission denied', 'network':'Network error' };
-    setVmsStatus(msgs[e.error] || 'Error: ' + e.error);
-    stopListening();
+    console.log('SpeechRecognition error:', e.error);
+    const msgs = {
+      'no-speech':    'Didn\'t catch that — try again',
+      'not-allowed':  'Mic blocked — allow access in Settings > Safari > Microphone',
+      'network':      'Network error during recognition',
+      'aborted':      '',
+    };
+    const msg = msgs[e.error];
+    if (msg) setVmsStatus(msg);
+    State.isListening = false;
+    document.getElementById('big-mic-btn').classList.remove('listening');
+    document.getElementById('mic-btn').classList.remove('listening');
   };
 
   rec.onend = () => {
@@ -3455,12 +3447,21 @@ function startListening() {
     document.getElementById('mic-btn').classList.remove('listening');
     if (finalTranscript.trim()) {
       sendVoiceMessage(finalTranscript.trim());
-    } else {
+    } else if (State.voiceModeOpen) {
       setVmsStatus('Tap the mic and speak');
     }
   };
 
-  try { rec.start(); } catch(e) { showSnackbar('Could not start mic'); State.isListening = false; }
+  // Must call .start() synchronously within the user-gesture call stack (iOS requirement)
+  try {
+    rec.start();
+  } catch(e) {
+    console.log('rec.start() error:', e);
+    setVmsStatus('Could not start mic — try again');
+    State.isListening = false;
+    document.getElementById('big-mic-btn').classList.remove('listening');
+    document.getElementById('mic-btn').classList.remove('listening');
+  }
 }
 
 function stopListening() {

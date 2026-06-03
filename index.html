@@ -3404,19 +3404,33 @@ window.onNativeVoiceEvent = function(data) {
 // ── Speech Recognition ───────────────────────────────────────
 
 function toggleVoiceMode() {
+  console.log('[Voice] toggleVoiceMode, voiceModeOpen=', State.voiceModeOpen,
+    'native=', !!window.NATIVE_VOICE_AVAILABLE,
+    'claudeKey=', !!State.claudeKey, 'openaiKey=', !!State.openaiKey);
   if (!State.voiceModeOpen) openVoiceMode();
   else closeVoiceMode();
 }
 
 function openVoiceMode() {
-  const hasNative = window.NATIVE_VOICE_AVAILABLE && window.NativeSTT;
+  const hasNative  = window.NATIVE_VOICE_AVAILABLE && window.NativeSTT;
   const hasBrowser = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  console.log('[Voice] openVoiceMode hasNative=', hasNative, 'hasBrowser=', hasBrowser);
+
   if (!hasNative && !hasBrowser) {
     showSnackbar('Speech not supported in this browser');
     return;
   }
+
   const hasKey = State.aiProvider === 'claude' ? !!State.claudeKey : !!State.openaiKey;
-  if (!hasKey) { showApiKeyModal(); return; }
+  console.log('[Voice] hasKey=', hasKey, 'provider=', State.aiProvider);
+
+  if (!hasKey) {
+    // 确保先关掉任何已有的 overlay，再开 modal
+    document.getElementById('sheet-overlay').classList.remove('visible');
+    showSnackbar('⚙️ Set your API key in Settings first');
+    setTimeout(() => showApiKeyModal(), 600);
+    return;
+  }
 
   State.voiceModeOpen = true;
   document.getElementById('voice-mode-sheet').classList.add('open');
@@ -3452,6 +3466,7 @@ function startListening() {
 
   // ── 原生桥（iOS WKWebView）──
   if (window.NATIVE_VOICE_AVAILABLE && window.NativeSTT) {
+    console.log('[Voice] calling NativeSTT.start()');
     window.NativeSTT.start();
     return;
   }

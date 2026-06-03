@@ -112,6 +112,10 @@ html, body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+  /* 全局禁止长按选文字 / 弹出菜单 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* ============================================================
@@ -1831,7 +1835,12 @@ body.scroll-lock { overflow: hidden; }
   0%, 100% { opacity: 0; }
   50% { opacity: 0.4; }
 }
-/* Speak button on AI messages */
+/* 输入框和消息内容允许选文字 */
+input, textarea, .msg-bubble, .sheet-section-content, .sheet-msg {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
 .speak-btn {
   display: inline-flex;
   align-items: center;
@@ -1946,7 +1955,7 @@ body.scroll-lock { overflow: hidden; }
     </div>
 
     <div class="chat-input-area">
-      <button class="mic-btn" id="mic-btn" onclick="toggleVoiceMode()" title="Speak">
+      <button class="mic-btn" id="mic-btn" ontouchstart="event.preventDefault();toggleVoiceMode();" onclick="toggleVoiceMode();" title="Speak">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
           <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
@@ -1981,7 +1990,7 @@ body.scroll-lock { overflow: hidden; }
     </button>
     <div class="voice-mode-status" id="vms-status">Tap the mic and start speaking</div>
     <div class="voice-mode-transcript" id="vms-transcript"></div>
-    <button class="big-mic-btn" id="big-mic-btn" onclick="toggleListening()">
+    <button class="big-mic-btn" id="big-mic-btn" ontouchstart="event.preventDefault();toggleListening();" onclick="toggleListening()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
         <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>

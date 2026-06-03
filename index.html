@@ -3328,16 +3328,21 @@ async function callOpenAI(messages, systemPrompt = '') {
 
 // ── Text-to-Speech ──────────────────────────────────────────
 function speakText(text, onEnd) {
+  const clean = text.replace(/[*_`#>~]/g, '').trim();
+  // 原生桥（iOS WKWebView）
+  if (window.NATIVE_VOICE_AVAILABLE && window.NativeTTS) {
+    State._ttsOnEnd = onEnd || null;
+    window.NativeTTS.speak(clean);
+    return;
+  }
+  // 桌面浏览器 fallback
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const clean = text.replace(/[*_`#>~]/g, '').trim();
   const utt = new SpeechSynthesisUtterance(clean);
   utt.rate  = State.voiceSpeed || 1.0;
   utt.pitch = 1.05;
-  // Prefer a US English voice
   const voices = window.speechSynthesis.getVoices();
-  const usVoice = voices.find(v => v.lang === 'en-US' && v.name.toLowerCase().includes('samantha'))
-    || voices.find(v => v.lang === 'en-US' && !v.name.toLowerCase().includes('google'))
+  const usVoice = voices.find(v => v.lang === 'en-US' && !v.name.toLowerCase().includes('google'))
     || voices.find(v => v.lang.startsWith('en-US'))
     || voices.find(v => v.lang.startsWith('en'));
   if (usVoice) utt.voice = usVoice;
@@ -3348,23 +3353,66 @@ function speakText(text, onEnd) {
 }
 
 function stopSpeaking() {
+  if (window.NATIVE_VOICE_AVAILABLE && window.NativeTTS) {
+    window.NativeTTS.stop(); return;
+  }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
+// ── Native Voice Event Handler (called by Swift via evaluateJavaScript) ──
+window.onNativeVoiceEvent = function(data) {
+  switch(data.event) {
+    case 'sttStart':
+      State.isListening = true;
+      document.getElementById('big-mic-btn').classList.add('listening');
+      document.getElementById('mic-btn').classList.add('listening');
+      setVmsStatus('Listening…');
+      document.getElementById('vms-transcript').textContent = '';
+      break;
+    case 'sttPartial':
+      document.getElementById('vms-transcript').textContent = data.text || '';
+      break;
+    case 'sttFinal':
+      State.isListening = false;
+      document.getElementById('big-mic-btn').classList.remove('listening');
+      document.getElementById('mic-btn').classList.remove('listening');
+      document.getElementById('vms-transcript').textContent = data.text || '';
+      if (data.text && data.text.trim()) sendVoiceMessage(data.text.trim());
+      break;
+    case 'sttEnd':
+      State.isListening = false;
+      document.getElementById('big-mic-btn').classList.remove('listening');
+      document.getElementById('mic-btn').classList.remove('listening');
+      if (State.voiceModeOpen) {
+        const t = document.getElementById('vms-transcript').textContent.trim();
+        if (!t) setVmsStatus('Tap the mic and speak');
+      }
+      break;
+    case 'sttError':
+      State.isListening = false;
+      document.getElementById('big-mic-btn').classList.remove('listening');
+      document.getElementById('mic-btn').classList.remove('listening');
+      const errMsgs = { 'not-allowed': 'Mic blocked — allow in Settings > Privacy > Microphone' };
+      setVmsStatus(errMsgs[data.error] || 'Try again');
+      break;
+    case 'ttsEnd':
+      if (State._ttsOnEnd) { State._ttsOnEnd(); State._ttsOnEnd = null; }
+      break;
+  }
+};
+
 // ── Speech Recognition ───────────────────────────────────────
 
-async function toggleVoiceMode() {
-  if (!State.voiceModeOpen) {
-    openVoiceMode();   // intentionally NOT awaited — must stay sync for iOS
-  } else {
-    closeVoiceMode();
-  }
+function toggleVoiceMode() {
+  if (!State.voiceModeOpen) openVoiceMode();
+  else closeVoiceMode();
 }
 
 function openVoiceMode() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showSnackbar('Speech not supported — try Safari or Chrome');
+  const hasNative = window.NATIVE_VOICE_AVAILABLE && window.NativeSTT;
+  const hasBrowser = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  if (!hasNative && !hasBrowser) {
+    showSnackbar('Speech not supported in this browser');
     return;
   }
   const hasKey = State.aiProvider === 'claude' ? !!State.claudeKey : !!State.openaiKey;
@@ -3380,8 +3428,7 @@ function openVoiceMode() {
 
 function closeVoiceMode() {
   State.voiceModeOpen = false;
-  State.isListening = false;
-  if (State.recognition) { try { State.recognition.stop(); } catch(e){} State.recognition = null; }
+  stopListening();
   stopSpeaking();
   document.getElementById('voice-mode-sheet').classList.remove('open');
   document.getElementById('sheet-overlay').classList.remove('visible');
@@ -3396,35 +3443,35 @@ function setVmsStatus(msg) {
 }
 
 function toggleListening() {
-  if (State.isListening) {
-    stopListening();
-  } else {
-    startListening();
-  }
+  if (State.isListening) stopListening();
+  else startListening();
 }
 
 function startListening() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) { showSnackbar('Speech not supported in this browser'); return; }
-
-  // Create fresh instance every time (iOS requires this)
-  const rec = new SpeechRecognition();
-  rec.continuous     = false;
-  rec.interimResults = true;
-  rec.lang           = 'en-US';
-  rec.maxAlternatives = 1;
-
   stopSpeaking();
-  State.recognition  = rec;
-  State.isListening  = true;
 
+  // ── 原生桥（iOS WKWebView）──
+  if (window.NATIVE_VOICE_AVAILABLE && window.NativeSTT) {
+    window.NativeSTT.start();
+    return;
+  }
+
+  // ── 桌面浏览器 fallback ──
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { setVmsStatus('Speech not supported'); return; }
+
+  const rec = new SpeechRecognition();
+  rec.continuous = false; rec.interimResults = true;
+  rec.lang = 'en-US'; rec.maxAlternatives = 1;
+
+  State.recognition = rec;
+  State.isListening = true;
   document.getElementById('big-mic-btn').classList.add('listening');
   document.getElementById('mic-btn').classList.add('listening');
   setVmsStatus('Listening…');
   document.getElementById('vms-transcript').textContent = '';
 
   let finalTranscript = '';
-
   rec.onresult = (e) => {
     let interim = '';
     finalTranscript = '';
@@ -3434,42 +3481,22 @@ function startListening() {
     }
     document.getElementById('vms-transcript').textContent = finalTranscript || interim;
   };
-
   rec.onerror = (e) => {
-    console.log('SpeechRecognition error:', e.error);
-    const msgs = {
-      'no-speech':    'Didn\'t catch that — try again',
-      'not-allowed':  'Mic blocked — allow access in Settings > Safari > Microphone',
-      'network':      'Network error during recognition',
-      'aborted':      '',
-    };
-    const msg = msgs[e.error];
-    if (msg) setVmsStatus(msg);
+    setVmsStatus(e.error === 'not-allowed' ? 'Mic permission denied' : 'Try again');
     State.isListening = false;
     document.getElementById('big-mic-btn').classList.remove('listening');
     document.getElementById('mic-btn').classList.remove('listening');
   };
-
   rec.onend = () => {
     State.isListening = false;
     document.getElementById('big-mic-btn').classList.remove('listening');
     document.getElementById('mic-btn').classList.remove('listening');
-    if (finalTranscript.trim()) {
-      sendVoiceMessage(finalTranscript.trim());
-    } else if (State.voiceModeOpen) {
-      setVmsStatus('Tap the mic and speak');
-    }
+    if (finalTranscript.trim()) sendVoiceMessage(finalTranscript.trim());
+    else if (State.voiceModeOpen) setVmsStatus('Tap the mic and speak');
   };
-
-  // Must call .start() synchronously within the user-gesture call stack (iOS requirement)
-  try {
-    rec.start();
-  } catch(e) {
-    console.log('rec.start() error:', e);
-    setVmsStatus('Could not start mic — try again');
+  try { rec.start(); } catch(e) {
+    setVmsStatus('Could not start mic');
     State.isListening = false;
-    document.getElementById('big-mic-btn').classList.remove('listening');
-    document.getElementById('mic-btn').classList.remove('listening');
   }
 }
 
@@ -3477,6 +3504,9 @@ function stopListening() {
   State.isListening = false;
   document.getElementById('big-mic-btn').classList.remove('listening');
   document.getElementById('mic-btn').classList.remove('listening');
+  if (window.NATIVE_VOICE_AVAILABLE && window.NativeSTT) {
+    window.NativeSTT.stop(); return;
+  }
   if (State.recognition) {
     try { State.recognition.stop(); } catch(e) {}
     State.recognition = null;

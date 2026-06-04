@@ -3462,6 +3462,10 @@ function openVoiceMode() {
   document.getElementById('voice-overlay').classList.add('visible');
   setVmsStatus('Tap the mic and speak');
   document.getElementById('vms-transcript').textContent = '';
+  // 上报大 mic 位置给 Swift
+  setTimeout(() => {
+    if (window._reportMicPositions) window._reportMicPositions();
+  }, 350);
 }
 
 function closeVoiceMode() {
